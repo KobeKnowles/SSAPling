@@ -1,0 +1,94 @@
+[build-system]
+requires = ["hatchling>=1.26"]
+build-backend = "hatchling.build"
+
+[project]
+name = "ssapling"
+dynamic = ["version"]
+description = "Infrastructure, interfaces and scaffolding for System-Specification Alignment Problem projects."
+readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+requires-python = ">=3.12"
+authors = [{ name = "Kobe Knowles" }]
+keywords = ["machine learning", "reinforcement learning", "training", "evaluation", "alignment"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Typing :: Typed",
+]
+# The base install has no third-party dependencies, a packaging commitment (docs/overview.md).
+dependencies = []
+
+[project.optional-dependencies]
+yaml = ["pyyaml>=6.0"]
+
+[project.urls]
+Repository = "https://github.com/KobeKnowles/SSAPling"
+Documentation = "https://github.com/KobeKnowles/SSAPling/blob/main/docs/overview.md"
+Changelog = "https://github.com/KobeKnowles/SSAPling/blob/main/CHANGELOG.md"
+Issues = "https://github.com/KobeKnowles/SSAPling/issues"
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "ruff>=0.6",
+    "mypy>=1.11",
+    "pyyaml>=6.0",
+    "types-PyYAML",
+    "jsonschema>=4",
+    "types-jsonschema>=4.26.0.20260518",
+]
+
+[tool.hatch.version]
+path = "src/ssapling/__init__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ssapling"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "src/",
+    "tests/",
+    "docs/",
+    "examples/",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md",
+    "pyproject.toml",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = ["-ra", "--strict-markers", "--strict-config"]
+xfail_strict = true
+filterwarnings = ["error"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests"]
+# Code in docs is illustrative and hand-aligned for reading; ruff checks Python files only.
+extend-exclude = ["*.md"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF", "N", "PT"]
+
+[tool.ruff.lint.flake8-bugbear]
+# setting() returns a dataclasses.field, like field() itself, so it is safe as a default.
+extend-immutable-calls = ["ssapling.core.setting", "ssapling.core.settings.setting"]
+
+[tool.mypy]
+python_version = "3.12"
+files = ["src", "tests", "examples"]
+strict = true
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+disallow_untyped_calls = false

@@ -1,0 +1,51 @@
+# One training run: a learner that knows no arithmetic learns addition on the
+# digit pad from a tutor, and is assessed on problems it never trains on.
+
+components:                           # built in this order; each key is the component's role
+  task: {kind: tasks, name: addition, settings: {max_digits: 3}}
+  sampler:                            # 1-, 2- and 3-digit problems, equally often
+    kind: samplers
+    name: generated
+    settings: {vary: digits, values: [1, 2, 3]}
+    uses: {source: task}
+  collections:                        # reserved problems: training never draws them
+    kind: collections
+    settings:
+      source: task
+      build:
+        validation: {sampler: sampler, size: 30, seed: 1}
+        test: {sampler: sampler, size: 30, seed: 2, held_out: true}
+  environment: {kind: environments, name: digit_pad}
+  tutor: {kind: teachers, name: column_tutor}
+  model: {kind: models, name: fact_learner}
+  monitoring:                         # assessed during training
+    kind: assessments
+    name: standard
+    settings:
+      collections: [validation]
+      aggregations: {accuracy: {measurement: score, aggregator: mean}}
+    uses: {collections: collections, task: task, env: environment, outcome: outcome}
+  final:                              # assessed once, after training
+    kind: assessments
+    name: standard
+    settings:
+      collections: [test]
+      aggregations:
+        accuracy: {measurement: score, aggregator: mean}
+        by_digits: {measurement: score, aggregator: mean, group_by: digits}
+    uses: {collections: collections, task: task, env: environment, outcome: outcome}
+
+procedure:
+  - stage: interact                   # 20 episodes with the tutor, learning after each step
+    settings:
+      episodes: 20
+      teacher: tutor
+      episode: {intervene: true}      # apply the tutor's corrections, so every episode finishes
+      learn: {operation: learn_from_experience, after: step}
+  - stage: assess
+    every: {episodes: 100}
+    settings: {assessment: monitoring}
+  - stage: checkpoint
+    every: {episodes: 200}
+
+stop: {episodes: 2000, value: monitoring.accuracy, at_least: 1.0}
